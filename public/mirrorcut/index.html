@@ -16,6 +16,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #mute{position:fixed;right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;border:2px solid #2b4285;background:#16264d;color:#fff;font-size:20px;z-index:5}
 #ratio{position:fixed;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:clamp(34px,11vw,84px);pointer-events:none;font-variant-numeric:tabular-nums;text-shadow:0 0 24px currentColor;opacity:0}
 #grade{position:fixed;left:0;right:0;top:calc(50% - clamp(78px,19vw,150px));text-align:center;font-weight:900;font-size:clamp(28px,9vw,64px);pointer-events:none;opacity:0;letter-spacing:.04em}
+#goal{position:fixed;left:0;right:0;top:max(84px,calc(env(safe-area-inset-top) + 76px));text-align:center;font-weight:900;font-size:clamp(18px,5.2vw,28px);pointer-events:none;display:none;text-shadow:0 2px 0 #0b1530,0 0 12px rgba(0,0,0,.6)}
 #combo{position:fixed;left:0;right:0;bottom:max(70px,calc(env(safe-area-inset-bottom) + 60px));text-align:center;font-weight:900;font-size:clamp(22px,6vw,40px);color:#ffe45c;pointer-events:none;text-shadow:0 0 14px #ffb300}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none}
 .pop{animation:pop .9s ease-out forwards}
@@ -45,14 +46,15 @@ a.bmc{background:#ffdd00;color:#222}
 <body>
 <canvas id="cv"></canvas>
 <div id="hud"><div class="pill" id="time"><small>TIME</small><span id="tv">60</span></div><div class="pill"><small>SCORE</small><span id="sv">0</span></div></div>
-<div id="grade"></div><div id="ratio"></div><div id="combo"></div><div id="flash"></div>
+<div id="goal"></div><div id="grade"></div><div id="ratio"></div><div id="combo"></div><div id="flash"></div>
 <button id="mute" aria-label="音">🔊</button>
 
 <div class="ov" id="title">
   <h1>ミラー・カット</h1>
-  <div class="sub">ピザもケーキもぴったり半分こ！</div>
+  <div class="sub">ピザもケーキもぴったり等分！</div>
   <div class="rule">50% : 50% で<br>真っ二つに切れ！</div>
-  <div class="sub">食べ物を横切るようにドラッグ/スワイプして線を引き、<br>指を離すと切断！ 制限時間は60秒</div>
+  <div class="sub" style="color:#7dffb0;font-weight:800">お題によっては3等分・4等分も！</div>
+  <div class="sub">食べ物を横切るようにドラッグ/スワイプして線を引き、<br>指を離すと切断！ 分けた数がお題と同じになったら判定。<br>制限時間は60秒</div>
   <button class="btn" id="start">START</button>
   <div class="links"><a href="../">ほかのゲーム</a>　|　<a href="https://buymeacoffee.com/tukimori" target="_blank" rel="noopener noreferrer">コーヒーで応援</a></div>
 </div>
@@ -121,28 +123,34 @@ function band(p,y0,y1,col){g.save();pth(p);g.clip();g.fillStyle=col;g.fillRect(-
 const FOODS={
  pizza:{ja:'ピザ',col:'#ffcf4f',gen:()=>circ(56,1,0,0,0,TAU).slice(0,-1),paint(p,D){fp(p,'#ffcf4f');D.slice(0,7).forEach(d=>{dot(d[0],d[1],.13*d[2],'#d6453d');dot(d[0]+.03,d[1]-.03,.035,'#f08b7e')});D.slice(7,12).forEach(d=>dot(d[0],d[1],.05,'#4aa84a'));inset(p,'#e59a3c',.13)}},
  pizzaBite:{ja:'かじられたピザ',col:'#ffcf4f',gen:()=>{const a0=rnd(0,TAU),w=rnd(.9,1.5);return[[0,0]].concat(circ(48,1,0,0,a0+w,a0+TAU))},paint(p,D){FOODS.pizza.paint(p,D)}},
+ cake:{ja:'ホールケーキ',col:'#ff9ec4',gen:()=>circ(56,1,0,0,0,TAU).slice(0,-1),paint(p,D){fp(p,'#fff3df');inset(p,'#ff9ec4',.2);for(let i=0;i<8;i++){const a=i/8*TAU+.2,x=Math.cos(a)*.64,y=Math.sin(a)*.64;dot(x,y,.13,'#e8344e');dot(x-.04,y-.04,.035,'#ff9aa8');ln(x-.07,y-.13,x+.07,y-.13,'#3fa34d',.05)}for(let i=0;i<20;i++){const a=i/20*TAU;dot(Math.cos(a)*.9,Math.sin(a)*.9,.05,'#fff')}dot(0,0,.3,'#fff');dot(0,0,.12,'#ffd36b')}},
  choco:{ja:'板チョコ',col:'#8a5136',gen:()=>{const h=rnd(.55,.75);return[[-1,-h],[1,-h],[1,h],[-1,h]]},paint(p,D){fp(p,'#6a3b25');const h=Math.abs(p[0][1]);for(let i=-1;i<=1;i+=.5)ln(i,-h,i,h,'#4a2616',.05);ln(-1,0,1,0,'#4a2616',.05);inset(p,'#8a5136',.07)}},
- cakeSq:{ja:'ケーキ',col:'#ff9ec4',gen:()=>[[-.95,-.95],[.95,-.95],[.95,.95],[-.95,.95]],paint(p,D){fp(p,'#fff3df');inset(p,'#ff9ec4',.22);[[-.6,-.6],[.6,-.6],[-.6,.6],[.6,.6]].forEach(c=>{dot(c[0],c[1],.15,'#e8344e');dot(c[0]-.04,c[1]-.04,.04,'#ff9aa8');ln(c[0]-.08,c[1]-.15,c[0]+.08,c[1]-.15,'#3fa34d',.06)});D.slice(0,6).forEach(d=>dot(d[0]*.6,d[1]*.6,.03,'#fff'))}},
  cakeSlice:{ja:'ショートケーキ',col:'#ff9ec4',gen:()=>[[0,-1],[1.05,.8],[-1.05,.8]],paint(p,D){fp(p,'#ffe3b3');band(p,.05,.2,'#fff');band(p,.3,.45,'#ff9ec4');band(p,.55,.7,'#fff');dot(0,-.45,.17,'#e8344e');dot(-.05,-.5,.04,'#ff9aa8');ln(-.1,-.62,.1,-.62,'#3fa34d',.07);inset(p,'#d9a05b',.05)}},
- sandwich:{ja:'サンドイッチ',col:'#f3c982',gen:()=>[[-1,-.9],[1,.9],[-1,.9]],paint(p,D){fp(p,'#f3c982');band(p,-.5,-.3,'#78cf5f');band(p,-.3,-.1,'#ee5a4a');band(p,-.1,.1,'#ffd84a');band(p,.1,.3,'#f4a0a0');band(p,.3,.45,'#78cf5f');inset(p,'#c98a45',.1)}},
+ sandwich:{ja:'サンドイッチ',col:'#f3c982',gen:()=>[[-1,-.9],[1,.9],[-1,.9]],paint(p,D){fp(p,'#f3c982');g.save();pth(p);g.clip();ln(-1,-.9,1,.9,'#78cf5f',.5);ln(-1,-.9,1,.9,'#ee5a4a',.34);ln(-1,-.9,1,.9,'#f4a0a0',.18);g.restore();inset(p,'#c98a45',.1)}},
  melon:{ja:'スイカ',col:'#ff5a6a',gen:()=>circ(44,1,0,.5,Math.PI,TAU),paint(p,D){fp(p,'#ff5a6a');D.slice(0,9).forEach(d=>{g.save();g.translate(d[0]*.85,.25-Math.abs(d[1])*.6);g.rotate(d[3]);g.scale(1,1.8);dot(0,0,.035,'#222');g.restore()});inset(p,'#eaf7d0',.16);inset(p,'#2e9e4f',.08)}},
- toast:{ja:'トースト',col:'#e0a85c',gen:()=>[[-.9,.95],[.9,.95],[.9,-.1],[1,-.5],[.7,-.85],[.3,-.8],[0,-.65],[-.3,-.8],[-.7,-.85],[-1,-.5],[-.9,-.1]],paint(p,D){fp(p,'#c98a45');fp(scl(p,.85),'#ffe6a8');g.save();g.translate(-.18,.0);g.fillStyle='#ffe066';g.fillRect(0,0,.36,.3);g.restore();ln(-.18,0,.18,0,'#fff3a0',.04)}},
+ toast:{ja:'食パン',col:'#e0a85c',gen:()=>[[-.9,.95],[.9,.95],[.9,-.1],[1,-.5],[.7,-.85],[.3,-.8],[0,-.65],[-.3,-.8],[-.7,-.85],[-1,-.5],[-.9,-.1]],paint(p,D){fp(p,'#c98a45');fp(scl(p,.85),'#ffe6a8');g.save();g.translate(-.18,.0);g.fillStyle='#ffe066';g.fillRect(0,0,.36,.3);g.restore();ln(-.18,0,.18,0,'#fff3a0',.04)}},
  onigiri:{ja:'おにぎり',col:'#fffdf5',gen:()=>chaikin([[0,-.95],[.98,.8],[-.98,.8]],3),paint(p,D){fp(p,'#fffdf5');D.slice(0,7).forEach(d=>dot(d[0]*.7,d[1]*.7-.1,.025,'#e5dfcc'));band(p,.1,1.2,'#1d2a29');inset(p,'#d8d2c0',.04)}},
- cheese:{ja:'チーズ',col:'#ffd54a',gen:()=>[[-1.1,.55],[1.1,.55],[1.1,-.1],[-1.1,-.65]],paint(p,D){fp(p,'#ffcf3f');D.slice(0,6).forEach(d=>dot(d[0]*1.3,d[1]*.45+.1,.09*d[2],'#e0a416'));inset(p,'#ffe27a',.1)}},
+ cheese:{ja:'チーズ',col:'#ffd54a',gen:()=>[[0,.8]].concat(circ(20,1.7,0,.8,-Math.PI/2-.5,-Math.PI/2+.5)),paint(p,D){fp(p,'#ffcf3f');D.slice(0,6).forEach(d=>dot(d[0]*.6,d[1]*.5-.1,.09*d[2],'#e0a416'));inset(p,'#ffe27a',.1)}},
  cookie:{ja:'かじりクッキー',col:'#d9964a',gen:()=>{const bs=[];for(let i=0;i<3;i++)bs.push([rnd(0,TAU),rnd(.2,.32),rnd(.3,.5)]);const o=[];for(let i=0;i<72;i++){const a=i/72*TAU;let r=1;bs.forEach(b=>{let d=Math.abs(((a-b[0]+Math.PI)%TAU+TAU)%TAU-Math.PI);r-=b[1]*Math.max(0,1-(d/b[2])**2)});o.push([Math.cos(a)*r,Math.sin(a)*r])}return o},paint(p,D){fp(p,'#d9964a');D.slice(0,9).forEach(d=>dot(d[0],d[1],.075*d[2],'#5a3420'));inset(p,'#c07e35',.07)}},
+ hotdog:{ja:'ホットドッグ',col:'#e9b46a',gen:()=>{const o=[],r=.42;for(let i=0;i<=16;i++){const a=-Math.PI/2+Math.PI*i/16;o.push([1.2-r+Math.cos(a)*r,Math.sin(a)*r])}for(let i=0;i<=16;i++){const a=Math.PI/2+Math.PI*i/16;o.push([-1.2+r+Math.cos(a)*r,Math.sin(a)*r])}return o},paint(p,D){fp(p,'#e9b46a');g.save();pth(p);g.clip();g.fillStyle='#c4412d';g.fillRect(-3,-.17,6,.34);g.restore();g.beginPath();for(let x=-1.1;x<=1.1;x+=.14){g.lineTo(x,(Math.round((x+1.1)/.14)%2?.07:-.07))}g.lineWidth=.06;g.strokeStyle='#ffd23f';g.lineJoin='round';g.stroke();inset(p,'#c98a45',.06)}},
  croissant:{ja:'クロワッサン',col:'#e3a23f',gen:()=>{const o=[];for(let i=0;i<=30;i++){const t=Math.PI-Math.PI*i/30;o.push([Math.cos(t),.45-.95*Math.sin(t)])}for(let i=1;i<30;i++){const t=Math.PI*i/30;o.push([Math.cos(t),.45-.42*Math.sin(t)])}return o},paint(p,D){fp(p,'#e3a23f');[.22,.4,.6,.78].forEach(f=>{const t=Math.PI*f;ln(Math.cos(t),.45-.95*Math.sin(t),Math.cos(t),.45-.42*Math.sin(t),'#b9772a',.06)});inset(p,'#c98a2b',.05);inset(p,'#f2c36a',.02)}},
  heart:{ja:'ハートクッキー',col:'#ff8fb3',gen:()=>{const o=[];for(let i=0;i<64;i++){const t=i/64*TAU;o.push([1.08*16*Math.pow(Math.sin(t),3)/17,1.08*(-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17)-.2])}return o},paint(p,D){fp(p,'#ff8fb3');inset(p,'#ffd0e0',.12);const cs=['#fff','#ffe45c','#7dffb0','#8cc8ff'];D.slice(0,10).forEach((d,i)=>ln(d[0]*.8,d[1]*.8-.1,d[0]*.8+.07,d[1]*.8-.04,cs[i%4],.035))}},
  star:{ja:'スタークッキー',col:'#ffd24d',gen:()=>{const o=[];for(let i=0;i<10;i++){const r=i%2?.5:1.1,a=-Math.PI/2+i*Math.PI/5;o.push([Math.cos(a)*r,Math.sin(a)*r+.1])}return o},paint(p,D){fp(p,'#ffd24d');inset(p,'#f0a830',.07);const cs=['#ff5c8a','#4df3ff','#fff'];D.slice(0,8).forEach((d,i)=>ln(d[0]*.45,d[1]*.45+.1,d[0]*.45+.06,d[1]*.45+.13,cs[i%3],.04))}},
- brownie:{ja:'ブラウニー',col:'#7a4a30',gen:()=>[[-1,-1],[-.3,-1],[-.3,.3],[1,.3],[1,1],[-1,1]],paint(p,D){fp(p,'#5b3320');inset(p,'#7a4a30',.1);D.slice(0,10).forEach(d=>dot(d[0]*1.1,d[1]*1.1,.06*d[2],'#c9a06a'))}}
+ taiyaki:{ja:'たい焼き',col:'#e8a64a',gen:()=>[[-1,0],[-.9,-.27],[-.62,-.47],[-.25,-.52],[.15,-.45],[.45,-.28],[.58,-.22],[.78,-.5],[1,-.62],[.95,-.2],[.82,0],[.95,.2],[1,.62],[.78,.5],[.58,.22],[.45,.28],[.15,.45],[-.25,.52],[-.62,.47],[-.9,.27]],paint(p,D){fp(p,'#e8a64a');for(let r=0;r<3;r++)for(let c=0;c<5;c++){g.beginPath();g.arc(-.35+c*.2+(r%2)*.1,-.25+r*.22,.09,0,Math.PI);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke()}dot(-.68,-.1,.07,'#fff');dot(-.67,-.1,.035,'#222');g.beginPath();g.moveTo(.55,0);g.lineTo(.95,-.5);g.moveTo(.55,0);g.lineTo(.95,.5);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke();inset(p,'#c47a2a',.06)}}
 };
-const EASY=['pizza','choco','cakeSq','sandwich','melon','toast','cakeSlice'],MID=['onigiri','cheese','pizzaBite','cookie'],HARD=['croissant','heart','star','brownie'];
+const EASY=['pizza','cake','choco','melon','toast','cakeSlice','sandwich'],MID=['onigiri','cheese','pizzaBite','cookie','hotdog'],HARD=['croissant','heart','star','taiyaki'];
+const MULT={2:1,3:1.6,4:2.2};
+let curN=2,cutLines=[];
 let shape=null;
-function newShape(force){
+function pickN(){const c=stats.cuts,r=Math.random();if(c<3)return 2;if(c<8)return r<.65?2:3;return r<.4?2:r<.72?3:4}
+function newShape(force,forceN){
   const pool=stats.cuts<4?EASY:stats.cuts<10?EASY.concat(MID):MID.concat(HARD,EASY.slice(0,3));
   const k=force||pool[Math.floor(Math.random()*pool.length)],F=FOODS[k];
   const D=[];for(let i=0;i<16;i++){const a=rnd(0,TAU),r=Math.sqrt(Math.random())*.72;D.push([Math.cos(a)*r,Math.sin(a)*r,rnd(.75,1.15),rnd(0,TAU)])}
   shape={kind:k,unit:F.gen(),deco:D,rot:rnd(0,TAU),sx:rnd(.92,1.08),sy:rnd(.92,1.08),col:F.col,born:performance.now()};
+  curN=forceN||(state==='play'?pickN():2);cutLines=[];setGoal(1);
 }
+function setGoal(m){const e=$('goal');if(!e)return;e.style.display=state==='play'?'block':'none';e.textContent=FOODS[shape.kind].ja+'を'+curN+'等分！'+(m>1?'（いま'+m+'こ）':'');e.style.color=curN===2?'#fff':curN===3?'#7dffb0':'#ffe45c'}
 function tfm(sc){return{S:Math.min(W,H*.82)*.36*(sc||1),cx:W/2,cy:H/2+Math.min(14,H*.02),rot:shape.rot,sx:shape.sx,sy:shape.sy}}
 function scr(sc){
   const T=tfm(sc),c=Math.cos(T.rot),s=Math.sin(T.rot);
@@ -161,12 +169,12 @@ let state='title',tLeft=60,score=0,combo=0,maxCombo=0,best=0,stats={cuts:0,errSu
 try{best=+localStorage.getItem('mc_best')||0}catch(e){}
 function setHud(){$('sv').textContent=score;$('tv').textContent=Math.ceil(tLeft);$('time').classList.toggle('low',tLeft<=10)}
 function startGame(){
-  ac();sfx.start();state='play';tLeft=60;score=0;combo=0;maxCombo=0;stats={cuts:0,errSum:0};pieces=[];parts=[];lock=false;drag=null;
+  ac();sfx.start();state='play';tLeft=60;score=0;combo=0;maxCombo=0;stats={cuts:0,errSum:0};pieces=[];parts=[];lock=false;drag=null;cutLines=[];
   $('title').classList.add('hide');$('result').classList.add('hide');$('hud').style.display='flex';$('combo').textContent='';
-  newShape();setHud();last=performance.now();
+  newShape();setGoal(1);setHud();last=performance.now();
 }
 function endGame(){
-  state='over';drag=null;sfx.end();$('hud').style.display='none';$('combo').textContent='';
+  state='over';drag=null;$('goal').style.display='none';sfx.end();$('hud').style.display='none';$('combo').textContent='';
   const avg=stats.cuts?(stats.errSum/stats.cuts):null;
   $('big').textContent=score;$('rc').textContent=maxCombo;$('rn').textContent=stats.cuts;$('re').textContent=avg===null?'-':avg.toFixed(2)+'%';
   let nb='';if(score>best){best=score;nb='NEW RECORD!';try{localStorage.setItem('mc_best',best)}catch(e){}}
@@ -185,29 +193,34 @@ function up(e){if(!drag||e.pointerId!==drag.id)return;drag.b=pos(e);const d=drag
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{if(drag&&e.pointerId===drag.id)drag=null});
 
 /* ---------- cut ---------- */
+function computeCells(poly,lines){let cs=[poly];for(const [a,b] of lines){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy),nx=-dy/L,ny=dx/L,c=nx*a[0]+ny*a[1],out=[];for(const P of cs){[clip(P,nx,ny,c),clip(P,-nx,-ny,-c)].forEach(Q=>{if(Q.length>2&&area(Q)>1)out.push(Q)})}cs=out}return cs}
 function doCut(a,b){
   if(Math.hypot(b[0]-a[0],b[1]-a[1])<24)return;
-  const poly=scr(1),r=split(poly,a,b);
-  if(!r||r.aA<1||r.aB<1){sfx.noCut();msg('食べ物を横切って！',null,'#9fd2ff',true);return}
+  const poly=scr(1),prev=computeCells(poly,cutLines).length,lines=cutLines.concat([[a,b]]),cells=computeCells(poly,lines);
+  if(cells.length===prev){sfx.noCut();msg('食べ物を横切って！',null,'#9fd2ff');return}
+  cutLines=lines;
+  const M=cells.length,N=curN;
+  if(M<N){sfx.swish();burst(a,b,'x',shape.col);setGoal(M);return}
   sfx.swish();
-  const pa=r.aA/r.t*100,pb=100-pa,err=Math.abs(pa-50);
+  const areas=cells.map(area),t=areas.reduce((x,y)=>x+y,0),pc=areas.map(x=>x/t*100),ideal=100/N;
+  const err=M===N?Math.max(...pc.map(p=>Math.abs(p-ideal))):10;
   let grade,col;
   if(err<=1.0){grade='PERFECT!!';col='#ffe45c'}else if(err<=3.0){grade='GREAT!';col='#7dffb0'}else{grade='MISS...';col='#ff5c8a'}
   stats.cuts++;stats.errSum+=err;
+  const mult=MULT[N]||1;
   if(grade==='MISS...'){combo=0;sfx.miss();shakeT=.25;document.body.classList.remove('shake');void document.body.offsetWidth;document.body.classList.add('shake')}
   else{
     const c0=combo;combo++;maxCombo=Math.max(maxCombo,combo);
-    if(grade==='PERFECT!!'){score+=300+c0*50;sfx.perfect(c0);flash()}else{score+=100+c0*20;sfx.great(c0)}
+    if(grade==='PERFECT!!'){score+=Math.round((300+c0*50)*mult/10)*10;sfx.perfect(c0);flash()}else{score+=Math.round((100+c0*20)*mult/10)*10;sfx.great(c0)}
   }
   $('combo').textContent=combo>=2?combo+' COMBO!':'';
   setHud();
-  // pieces fly apart along the cut normal
-  const T=tfm(1),mk=(P,k)=>{let cx=0,cy=0;P.forEach(t=>{cx+=t[0];cy+=t[1]});cx/=P.length;cy/=P.length;pieces.push({p:P,T,kind:shape.kind,unit:shape.unit,deco:shape.deco,col:shape.col,pcx:cx,pcy:cy,x:0,y:0,ang:0,vx:k*r.nx*160,vy:k*r.ny*160-60,vr:rnd(-.7,.7),life:0})};
-  mk(r.A,1);mk(r.B,-1);
+  const T=tfm(1),mk=P=>{let cx=0,cy=0;P.forEach(q=>{cx+=q[0];cy+=q[1]});cx/=P.length;cy/=P.length;let dx=cx-T.cx,dy=cy-T.cy,d=Math.hypot(dx,dy);if(d<1){const an=rnd(0,TAU);dx=Math.cos(an);dy=Math.sin(an);d=1}pieces.push({p:P,T,kind:shape.kind,unit:shape.unit,deco:shape.deco,col:shape.col,pcx:cx,pcy:cy,x:0,y:0,ang:0,vx:dx/d*170,vy:dy/d*170-60,vr:rnd(-.7,.7),life:0})};
+  cells.forEach(mk);
   burst(a,b,grade,shape.col);
-  msg(grade,pa.toFixed(1)+'% : '+pb.toFixed(1)+'%',col);
-  shape=null;lock=true;
-  setTimeout(()=>{if(state==='play'){newShape();lock=false}},grade==='MISS...'?650:520);
+  msg(grade,M===N?pc.map(x=>x.toFixed(1)+'%').join(' : '):M+'つに分かれちゃった！',col,N,M!==N);
+  shape=null;cutLines=[];lock=true;$('goal').style.display='none';
+  setTimeout(()=>{if(state==='play'){newShape();lock=false;setGoal(1)}},grade==='MISS...'?700:560);
 }
 function burst(a,b,grade,col){
   const n=grade==='PERFECT!!'?46:grade==='GREAT!'?26:12,dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
@@ -215,10 +228,12 @@ function burst(a,b,grade,col){
     parts.push({x,y,vx:Math.cos(an)*v,vy:Math.sin(an)*v,life:0,max:rnd(.4,.9),c:grade==='MISS...'?'#8a93b8':(Math.random()<.5?col:'#fff')})}
 }
 function flash(){const f=$('flash');f.style.transition='none';f.style.opacity=.55;void f.offsetWidth;f.style.transition='opacity .35s';f.style.opacity=0}
-function msg(grade,ratio,col,small){
+function msg(grade,ratio,col,N,over){
   const gE=$('grade'),rE=$('ratio');
-  gE.textContent=grade;gE.style.color=col;gE.classList.remove('popg');void gE.offsetWidth;gE.classList.add('popg');
-  if(ratio){rE.textContent=ratio;rE.style.color=col;rE.classList.remove('pop');void rE.offsetWidth;rE.classList.add('pop')}
+  gE.textContent=grade;gE.style.color=col;gE.style.top=(N===4&&!over)?'calc(50% - clamp(104px,25vw,190px))':'';gE.classList.remove('popg');void gE.offsetWidth;gE.classList.add('popg');
+  if(ratio){rE.textContent=ratio;if(N===4&&!over){const q=ratio.split(' : ');rE.innerHTML=q.slice(0,2).join(' : ')+'<br>'+q.slice(2).join(' : ')}
+    rE.style.fontSize=over?'clamp(20px,5.6vw,40px)':N===3?'clamp(22px,6.2vw,52px)':N===4?'clamp(24px,8vw,60px)':'';
+    rE.style.color=col;rE.classList.remove('pop');void rE.offsetWidth;rE.classList.add('pop')}
 }
 
 /* ---------- loop ---------- */
@@ -243,7 +258,7 @@ function frame(now){
     const p=scr(sc);drawPoly(p,shape.col,shape.col,shape.col,e);
     g.save();g.globalAlpha=e;pth(p);g.clip();paintFood(shape.kind,shape.unit,shape.deco,tfm(sc));g.restore();
     g.save();g.globalAlpha=e;pth(p);g.lineWidth=3;g.strokeStyle='#4a2a16';g.lineJoin='round';g.stroke();g.restore();
-    if(state==='play'){g.save();g.globalAlpha=.6*e;g.fillStyle='#fff';g.font='700 '+Math.max(15,Math.min(22,W*.045))+'px system-ui,sans-serif';g.textAlign='center';g.fillText(FOODS[shape.kind].ja,W/2,Math.max(104,H*.5-Math.min(W,H*.82)*.36*1.5));g.restore()}
+    if(cutLines.length){g.save();pth(p);g.clip();g.setLineDash([]);g.lineWidth=3;g.strokeStyle='#fff';g.shadowColor='#fff';g.shadowBlur=10;const R=Math.hypot(W,H);cutLines.forEach(l=>{const dx=l[1][0]-l[0][0],dy=l[1][1]-l[0][1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;g.beginPath();g.moveTo(l[0][0]-ux*R,l[0][1]-uy*R);g.lineTo(l[0][0]+ux*R,l[0][1]+uy*R);g.stroke()});g.restore()}
   }else if(!shape&&state==='title'){newShape()}
   if(shape&&state==='title'){shape.rot+=dt*.4;const p=scr(1);g.save();g.globalAlpha=.55;g.save();pth(p);g.clip();paintFood(shape.kind,shape.unit,shape.deco,tfm(1));g.restore();pth(p);g.lineWidth=3;g.strokeStyle='#4a2a16';g.stroke();g.restore()}
   // flying pieces
@@ -267,7 +282,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__mc={get shape(){return shape?scr(1):null},get state(){return state},force(k){newShape(k);lock=false},kinds:Object.keys(FOODS),get lock(){return lock},get W(){return W},get H(){return H},split};
+window.__mc={get shape(){return shape?scr(1):null},get state(){return state},get N(){return curN},force(k,n){newShape(k,n);lock=false},kinds:Object.keys(FOODS),get lock(){return lock},get W(){return W},get H(){return H},split};
 })();
 </script>
 </body>
