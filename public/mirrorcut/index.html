@@ -51,10 +51,9 @@ a.bmc{background:#ffdd00;color:#222}
 
 <div class="ov" id="title">
   <h1>ミラー・カット</h1>
-  <div class="sub">ピザもケーキもぴったり等分！</div>
+  <div class="sub">ピザも目玉焼きもぴったり半分こ！</div>
   <div class="rule">50% : 50% で<br>真っ二つに切れ！</div>
-  <div class="sub" style="color:#7dffb0;font-weight:800">お題によっては3等分・4等分も！</div>
-  <div class="sub">食べ物を横切るようにドラッグ/スワイプして線を引き、<br>指を離すと切断！ 分けた数がお題と同じになったら判定。<br>制限時間は60秒</div>
+  <div class="sub">食べ物を横切るようにドラッグ/スワイプして線を引き、<br>指を離すと切断！ 制限時間は60秒</div>
   <button class="btn" id="start">START</button>
   <div class="links"><a href="../">ほかのゲーム</a>　|　<a href="https://buymeacoffee.com/tukimori" target="_blank" rel="noopener noreferrer">コーヒーで応援</a></div>
 </div>
@@ -112,6 +111,7 @@ const area=p=>{let s=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.leng
 function clip(p,nx,ny,c){const o=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];const da=nx*a[0]+ny*a[1]-c,db=nx*b[0]+ny*b[1]-c;if(da>=0)o.push(a);if((da>=0)!==(db>=0)){const t=da/(da-db);o.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t])}}return o}
 const TAU=Math.PI*2;
 const scl=(p,k)=>p.map(q=>[q[0]*k,q[1]*k]);
+function capsule(L,r){const o=[];for(let i=0;i<=16;i++){const a=-Math.PI/2+Math.PI*i/16;o.push([L-r+Math.cos(a)*r,Math.sin(a)*r])}for(let i=0;i<=16;i++){const a=Math.PI/2+Math.PI*i/16;o.push([-L+r+Math.cos(a)*r,Math.sin(a)*r])}return o}
 function circ(n,r,cx,cy,a0,a1){const o=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;o.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r])}return o}
 function chaikin(p,it){for(let k=0;k<it;k++){const o=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];o.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])}p=o}return p}
 function pth(p){g.beginPath();p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.closePath()}
@@ -136,16 +136,36 @@ const FOODS={
  croissant:{ja:'クロワッサン',col:'#e3a23f',gen:()=>{const o=[];for(let i=0;i<=30;i++){const t=Math.PI-Math.PI*i/30;o.push([Math.cos(t),.45-.95*Math.sin(t)])}for(let i=1;i<30;i++){const t=Math.PI*i/30;o.push([Math.cos(t),.45-.42*Math.sin(t)])}return o},paint(p,D){fp(p,'#e3a23f');[.22,.4,.6,.78].forEach(f=>{const t=Math.PI*f;ln(Math.cos(t),.45-.95*Math.sin(t),Math.cos(t),.45-.42*Math.sin(t),'#b9772a',.06)});inset(p,'#c98a2b',.05);inset(p,'#f2c36a',.02)}},
  heart:{ja:'ハートクッキー',col:'#ff8fb3',gen:()=>{const o=[];for(let i=0;i<64;i++){const t=i/64*TAU;o.push([1.08*16*Math.pow(Math.sin(t),3)/17,1.08*(-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17)-.2])}return o},paint(p,D){fp(p,'#ff8fb3');inset(p,'#ffd0e0',.12);const cs=['#fff','#ffe45c','#7dffb0','#8cc8ff'];D.slice(0,10).forEach((d,i)=>ln(d[0]*.8,d[1]*.8-.1,d[0]*.8+.07,d[1]*.8-.04,cs[i%4],.035))}},
  star:{ja:'スタークッキー',col:'#ffd24d',gen:()=>{const o=[];for(let i=0;i<10;i++){const r=i%2?.5:1.1,a=-Math.PI/2+i*Math.PI/5;o.push([Math.cos(a)*r,Math.sin(a)*r+.1])}return o},paint(p,D){fp(p,'#ffd24d');inset(p,'#f0a830',.07);const cs=['#ff5c8a','#4df3ff','#fff'];D.slice(0,8).forEach((d,i)=>ln(d[0]*.45,d[1]*.45+.1,d[0]*.45+.06,d[1]*.45+.13,cs[i%3],.04))}},
- taiyaki:{ja:'たい焼き',col:'#e8a64a',gen:()=>[[-1,0],[-.9,-.27],[-.62,-.47],[-.25,-.52],[.15,-.45],[.45,-.28],[.58,-.22],[.78,-.5],[1,-.62],[.95,-.2],[.82,0],[.95,.2],[1,.62],[.78,.5],[.58,.22],[.45,.28],[.15,.45],[-.25,.52],[-.62,.47],[-.9,.27]],paint(p,D){fp(p,'#e8a64a');for(let r=0;r<3;r++)for(let c=0;c<5;c++){g.beginPath();g.arc(-.35+c*.2+(r%2)*.1,-.25+r*.22,.09,0,Math.PI);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke()}dot(-.68,-.1,.07,'#fff');dot(-.67,-.1,.035,'#222');g.beginPath();g.moveTo(.55,0);g.lineTo(.95,-.5);g.moveTo(.55,0);g.lineTo(.95,.5);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke();inset(p,'#c47a2a',.06)}}
+ taiyaki:{ja:'たい焼き',col:'#e8a64a',gen:()=>[[-1,0],[-.9,-.27],[-.62,-.47],[-.25,-.52],[.15,-.45],[.45,-.28],[.58,-.22],[.78,-.5],[1,-.62],[.95,-.2],[.82,0],[.95,.2],[1,.62],[.78,.5],[.58,.22],[.45,.28],[.15,.45],[-.25,.52],[-.62,.47],[-.9,.27]],paint(p,D){fp(p,'#e8a64a');for(let r=0;r<3;r++)for(let c=0;c<5;c++){g.beginPath();g.arc(-.35+c*.2+(r%2)*.1,-.25+r*.22,.09,0,Math.PI);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke()}dot(-.68,-.1,.07,'#fff');dot(-.67,-.1,.035,'#222');g.beginPath();g.moveTo(.55,0);g.lineTo(.95,-.5);g.moveTo(.55,0);g.lineTo(.95,.5);g.lineWidth=.03;g.strokeStyle='#c47a2a';g.stroke();inset(p,'#c47a2a',.06)}},
+ friedEgg:{ja:'目玉焼き',col:'#fffdf7',gen:()=>{const p1=rnd(0,TAU),p2=rnd(0,TAU),o=[];for(let i=0;i<72;i++){const a=i/72*TAU,r=.95+.12*Math.sin(3*a+p1)+.08*Math.sin(5*a+p2);o.push([Math.cos(a)*r,Math.sin(a)*r])}return o},paint(p,D){fp(p,'#fffdf7');inset(p,'#ecdcae',.05);const x=D[0][0]*.3,y=D[0][1]*.3;dot(x,y,.34,'#ffb81c');dot(x-.1,y-.1,.08,'#ffe08a')}},
+ waffle:{ja:'ワッフル',col:'#e5a85a',gen:()=>chaikin([[-.95,-.95],[.95,-.95],[.95,.95],[-.95,.95]],2),paint(p,D){fp(p,'#e5a85a');for(let i=-.76;i<=.8;i+=.38){ln(i,-1,i,1,'#b9772a',.05);ln(-1,i,1,i,'#b9772a',.05)}g.fillStyle='#ffe66d';g.fillRect(-.17,-.17,.34,.34);inset(p,'#c98a45',.08)}},
+ banana:{ja:'バナナ',col:'#ffe14d',gen:()=>{const o=[],a0=-Math.PI/2-.75,a1=-Math.PI/2+.75;for(let i=0;i<=24;i++){const a=a0+(a1-a0)*i/24;o.push([Math.cos(a)*1.3,.9+Math.sin(a)*1.3])}for(let i=24;i>=0;i--){const a=a0+(a1-a0)*i/24;o.push([Math.cos(a)*.95,.9+Math.sin(a)*.95])}return o},paint(p,D){fp(p,'#ffe14d');g.beginPath();g.arc(0,.9,1.125,-Math.PI/2-.75,-Math.PI/2+.75);g.lineWidth=.03;g.strokeStyle='#e8bf2a';g.stroke();inset(p,'#e8bf2a',.05);dot(p[0][0],p[0][1],.06,'#6b4a1e');dot(p[24][0],p[24][1],.06,'#6b4a1e')}},
+ carrot:{ja:'にんじん',col:'#ff8a2a',gen:()=>[[-1.05,-.3],[-.3,-.36],[.5,-.2],[1.15,0],[.5,.2],[-.3,.36],[-1.05,.3]],paint(p,D){fp(p,'#ff8a2a');[-.4,-.05,.3,.65].forEach(x=>ln(x,-.3+x*.15,x+.08,-.2+x*.1,'#d9661a',.04));g.save();pth(p);g.clip();g.fillStyle='#4cb04a';g.fillRect(-3,-1,2.15,2);g.restore();inset(p,'#e06d14',.05)}},
+ sushi:{ja:'にぎり寿司',col:'#ff7f5c',gen:()=>chaikin([[-1.1,-.5],[1.1,-.5],[1.1,.5],[-1.1,.5]],3),paint(p,D){fp(p,'#fffdf5');band(p,-.6,-.02,'#ff7f5c');ln(-.8,-.3,.8,-.1,'#ffd0c0',.05);ln(-.8,-.1,.8,.06,'#ffd0c0',.04);g.save();pth(p);g.clip();g.fillStyle='#1d2a29';g.fillRect(-.12,-.6,.24,1.2);g.restore();inset(p,'#d8d2c0',.03)}},
+ tamago:{ja:'卵焼き',col:'#ffd34d',gen:()=>chaikin([[-1.1,-.55],[1.1,-.55],[1.1,.55],[-1.1,.55]],2),paint(p,D){fp(p,'#ffd34d');[-.33,0,.33].forEach(y=>ln(-1.1,y,1.1,y,'#f0b020',.06));inset(p,'#e8a416',.08)}},
+ apple:{ja:'りんご',col:'#e0343c',gen:()=>{const o=[];for(let i=0;i<64;i++){const a=i/64*TAU,d=Math.abs(((a+Math.PI/2+Math.PI)%TAU+TAU)%TAU-Math.PI),r=1-.22*Math.max(0,1-(d/.3)**2);o.push([Math.cos(a)*r*1.02,Math.sin(a)*r])}return o},paint(p,D){fp(p,'#e0343c');dot(-.4,-.3,.22,'#ff8a8f');D.slice(0,8).forEach(d=>dot(d[0],d[1]+.1,.02,'#f5b0a0'));inset(p,'#b8222a',.08)}},
+ iceCream:{ja:'ソフトクリーム',col:'#ffb3d0',gen:()=>{const o=[[0,1.1],[.55,-.1]];for(let i=0;i<=30;i++){const a=.48-(.48+Math.PI+.48)*i/30;o.push([Math.cos(a)*.62,-.45+Math.sin(a)*.62])}o.push([-.55,-.1]);return o},paint(p,D){band(p,-1.3,-.1,'#ffb3d0');band(p,-.1,1.3,'#e6b36a');g.save();pth(p);g.clip();for(let i=-3;i<=3;i++){ln(i*.25,-.1,i*.25+.7,1.1,'#b9772a',.03);ln(i*.25,-.1,i*.25-.7,1.1,'#b9772a',.03)}const cs=['#fff','#ffe45c','#4df3ff','#a98bff'];D.slice(0,8).forEach((d,i)=>ln(d[0]*.5,d[1]*.4-.55,d[0]*.5+.07,d[1]*.4-.5,cs[i%4],.04));g.restore();dot(0,-.98,.1,'#e8344e')}},
+ burger:{ja:'ハンバーガー',col:'#e09a45',gen:()=>{const o=[];for(let i=0;i<=24;i++){const t=Math.PI+Math.PI*i/24;o.push([Math.cos(t),.05+.85*Math.sin(t)])}o.push([1,.5],[.9,.64],[-.9,.64],[-1,.5]);return o},paint(p,D){band(p,-1,-.1,'#e09a45');D.slice(0,10).forEach(d=>dot(d[0]*.8,-.4+d[1]*.35,.03,'#fff3d0'));band(p,-.1,.05,'#78cf5f');band(p,.05,.17,'#ee5a4a');band(p,.17,.38,'#6a3b25');band(p,.38,.46,'#ffd23f');band(p,.46,.8,'#e09a45');inset(p,'#b9772a',.04)}},
+ strawberry:{ja:'いちご',col:'#e8344e',gen:()=>{const o=[];for(let i=0;i<48;i++){const t=i/48*TAU,y=-Math.cos(t),x=Math.sin(t)*(1.15-.5*(y+1)/2);o.push([x*.95,y])}return o},paint(p,D){fp(p,'#e8344e');for(let r=0;r<6;r++)for(let c=-2;c<=2;c++){const x=c*.3+(r%2)*.15,y=-.5+r*.28;dot(x,y,.03,'#ffe38a')}band(p,-1.3,-.72,'#3fa34d');inset(p,'#c41f3a',.05)}},
+ baguette:{ja:'フランスパン',col:'#e0a755',gen:()=>{const o=[];for(let i=0;i<56;i++){const a=i/56*TAU;o.push([Math.cos(a)*1.25,Math.sin(a)*.42])}return o},paint(p,D){fp(p,'#e0a755');for(let x=-.75;x<=.8;x+=.38)ln(x-.12,.22,x+.12,-.22,'#f6dd9a',.07);inset(p,'#b9772a',.06)}},
+ gyoza:{ja:'ぎょうざ',col:'#ffeccc',gen:()=>{const o=[];for(let i=0;i<=24;i++){const t=Math.PI*i/24;o.push([Math.cos(t)*1.1,.3-.7*Math.sin(t)])}for(let i=1;i<24;i++){const t=Math.PI*i/24;o.push([-Math.cos(t)*1.1,.3+.18*Math.sin(t)])}return o},paint(p,D){fp(p,'#ffeccc');band(p,.25,.7,'#c98a45');for(let k=1;k<=6;k++){const x=-1.1+k*.314,e=.3-.7*Math.sqrt(Math.max(0,1-(x/1.1)**2));ln(x,e+.03,x+.06,e+.28,'#e5c795',.04)}inset(p,'#e5c795',.04)}},
+ candy:{ja:'キャンディ',col:'#ff7aa8',gen:()=>[[-1.2,-.55],[-.5,-.15],[.5,-.15],[1.2,-.55],[1.2,.55],[.5,.15],[-.5,.15],[-1.2,.55]],paint(p,D){fp(p,'#ff7aa8');[-1.0,-.8,.8,1.0].forEach(x=>ln(x,-1,x,1,'#fff',.05));g.save();pth(p);g.clip();g.fillStyle='#ffd36b';g.fillRect(-.5,-.3,1,.6);for(let i=-3;i<=3;i++)ln(i*.2-.1,-.3,i*.2+.1,.3,'#ff8c5c',.06);g.restore();inset(p,'#e0508a',.05)}},
+ lollipop:{ja:'ペロペロキャンディ',col:'#ff5c8a',gen:()=>{const o=[[-.06,1],[.06,1]];for(let i=0;i<=40;i++){const a=Math.PI/2-.1-(2*Math.PI-.2)*i/40;o.push([Math.cos(a)*.62,-.35+Math.sin(a)*.62])}return o},paint(p,D){fp(p,'#f5ead2');dot(0,-.35,.62,'#ff5c8a');dot(0,-.35,.5,'#fff');dot(0,-.35,.38,'#4df3ff');dot(0,-.35,.26,'#fff');dot(0,-.35,.14,'#ffe45c')}},
+ mushroom:{ja:'きのこ',col:'#e0463c',gen:()=>{const o=[];for(let i=0;i<=28;i++){const t=Math.PI+Math.PI*i/28;o.push([Math.cos(t)*1.1,Math.sin(t)*.8])}o.push([.5,.12],[.38,.9],[.2,1],[-.2,1],[-.38,.9],[-.5,.12]);return o},paint(p,D){band(p,-1,.1,'#e0463c');band(p,.1,1.2,'#f5ead2');D.slice(0,7).forEach(d=>dot(d[0],-.35+d[1]*.4,.09*d[2],'#fff'));inset(p,'#b9302a',.04)}},
+ corn:{ja:'とうもろこし',col:'#ffd23f',gen:()=>capsule(1.25,.38),paint(p,D){fp(p,'#ffd23f');for(let i=-1;i<=1.1;i+=.2)for(let j=-.34;j<=.35;j+=.17)dot(i,j,.065,'#ffe680');g.save();pth(p);g.clip();g.fillStyle='#6bbf4a';g.fillRect(-3,-1,2.1,2);g.restore();inset(p,'#d9a41a',.04)}},
+ pudding:{ja:'プリン',col:'#ffd36b',gen:()=>[[-.7,-.8],[.7,-.8],[1,.8],[-1,.8]],paint(p,D){fp(p,'#ffd36b');band(p,-1,-.4,'#7a3b12');ln(-.35,-.4,-.35,-.15,'#7a3b12',.12);ln(.25,-.4,.25,-.05,'#7a3b12',.12);dot(0,-.85,.13,'#e8344e');inset(p,'#e0a835',.04)}},
+ macaron:{ja:'マカロン',col:'#ffb3d0',gen:()=>chaikin([[-1,-.65],[1,-.65],[1,.65],[-1,.65]],3),paint(p,D){fp(p,'#ffb3d0');band(p,-.2,.2,'#fff3df');ln(-1,-.2,1,-.2,'#e88aa8',.04);ln(-1,.2,1,.2,'#e88aa8',.04);inset(p,'#e88aa8',.05)}},
+ cupcake:{ja:'カップケーキ',col:'#ff9ec4',gen:()=>{const o=[[-.5,1],[-.72,.25]];for(let i=0;i<=24;i++){const t=Math.PI+Math.PI*i/24;o.push([Math.cos(t)*.95,.2+Math.sin(t)*1.15])}o.push([.72,.25],[.5,1]);return o},paint(p,D){band(p,.25,1.2,'#8fd3ff');for(let x=-.45;x<=.5;x+=.15)ln(x*1.4,.25,x,1,'#5fb2e8',.04);band(p,-1.3,.25,'#ff9ec4');ln(-.8,-.15,.8,-.15,'#ffc2da',.08);ln(-.55,-.5,.55,-.5,'#ffc2da',.08);const cs=['#fff','#ffe45c','#4df3ff'];D.slice(0,8).forEach((d,i)=>ln(d[0]*.7,d[1]*.5-.3,d[0]*.7+.06,d[1]*.5-.26,cs[i%3],.04));dot(0,-.92,.12,'#e8344e')}}
 };
-const EASY=['pizza','cake','choco','melon','toast','cakeSlice','sandwich'],MID=['onigiri','cheese','pizzaBite','cookie','hotdog'],HARD=['croissant','heart','star','taiyaki'];
+const EASY=['pizza','cake','choco','melon','toast','cakeSlice','sandwich','waffle','sushi','tamago','burger','baguette','pudding','macaron','apple'],MID=['onigiri','cheese','pizzaBite','cookie','hotdog','friedEgg','banana','carrot','strawberry','gyoza','cupcake','corn','mushroom'],HARD=['croissant','heart','star','taiyaki','iceCream','candy','lollipop'];
 const MULT={2:1,3:1.6,4:2.2};
 let curN=2,cutLines=[];
 let shape=null;
-function pickN(){const c=stats.cuts,r=Math.random();if(c<3)return 2;if(c<8)return r<.65?2:3;return r<.4?2:r<.72?3:4}
+function pickN(){return 2}
+let recent=[];
 function newShape(force,forceN){
   const pool=stats.cuts<4?EASY:stats.cuts<10?EASY.concat(MID):MID.concat(HARD,EASY.slice(0,3));
-  const k=force||pool[Math.floor(Math.random()*pool.length)],F=FOODS[k];
+  const cand=pool.filter(x=>!recent.includes(x)),k=force||cand[Math.floor(Math.random()*cand.length)],F=FOODS[k];recent.push(k);if(recent.length>10)recent.shift();
   const D=[];for(let i=0;i<16;i++){const a=rnd(0,TAU),r=Math.sqrt(Math.random())*.72;D.push([Math.cos(a)*r,Math.sin(a)*r,rnd(.75,1.15),rnd(0,TAU)])}
   shape={kind:k,unit:F.gen(),deco:D,rot:rnd(0,TAU),sx:rnd(.92,1.08),sy:rnd(.92,1.08),col:F.col,born:performance.now()};
   curN=forceN||(state==='play'?pickN():2);cutLines=[];setGoal(1);
@@ -169,7 +189,7 @@ let state='title',tLeft=60,score=0,combo=0,maxCombo=0,best=0,stats={cuts:0,errSu
 try{best=+localStorage.getItem('mc_best')||0}catch(e){}
 function setHud(){$('sv').textContent=score;$('tv').textContent=Math.ceil(tLeft);$('time').classList.toggle('low',tLeft<=10)}
 function startGame(){
-  ac();sfx.start();state='play';tLeft=60;score=0;combo=0;maxCombo=0;stats={cuts:0,errSum:0};pieces=[];parts=[];lock=false;drag=null;cutLines=[];
+  ac();sfx.start();state='play';tLeft=60;score=0;combo=0;maxCombo=0;stats={cuts:0,errSum:0};pieces=[];parts=[];lock=false;drag=null;cutLines=[];recent=[];
   $('title').classList.add('hide');$('result').classList.add('hide');$('hud').style.display='flex';$('combo').textContent='';
   newShape();setGoal(1);setHud();last=performance.now();
 }
