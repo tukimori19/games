@@ -63,7 +63,7 @@ a.sh{background:#000;color:#fff;border:2px solid #fff}a.bmc{background:#ffdd00;c
 <div class="ov" id="title">
   <h1>グラビティ・<br>シーソー</h1>
   <div class="rule">消したい。でも、消すと傾く。</div>
-  <div class="sub">ブロックを落としてシーソーに積もう。<br>同じ材質を3つ以上つなげると<b>光る</b>。光ったグループを<b>タップで起爆</b>！<br>消えた分だけ軽くなって、シーソーが反対側に跳ねる…<br>「あえて消さない」判断と、左右<b>同時起爆(SYMMETRY)</b>が高得点のカギ。</div>
+  <div class="sub">ブロックを落としてシーソーに積もう。<br>同じ材質を3つ以上つなげると<b>光る</b>。光ったグループを<b>タップで起爆</b>！<br>点数は<b>支点から遠い端ほど高い</b>（真ん中は安い）。<b>風船</b>は丸いので上に乗せると滑り落ちる！<br>消えた分だけ軽くなって、シーソーが反対側に跳ねる…<br>「あえて消さない」判断と、左右<b>同時起爆(SYMMETRY)</b>が高得点のカギ。</div>
   <div class="sub" style="font-size:12px;opacity:.65">ドラッグ：位置 / 離す：落下 / 下フリック：急降下 / 光るグループをタップ：起爆 / 長押し：予測<br>PC: マウス or ←→ ・Space ・↓</div>
   <button class="btn" id="start">START</button>
   <button class="btn alt" id="daily">デイリーチャレンジ（今日は全員同じ並び）</button>
@@ -133,6 +133,7 @@ const TY={
  rock:{ja:'石',m:2,mu:.7,e:0,v:0,col:'#8a8a8a'}
 };
 const KG=30;
+const posW=x=>.15+.85*Math.min(1,Math.abs(x)/(L/2*.85));
 const MULT=n=>n>=6?3:n===5?2.2:n===4?1.5:1;
 const G=1500,KR=11,INERT=.8,DAMP=2.6,LIMIT=35*Math.PI/180,GOT=1.2,MAXB=40;
 
@@ -141,7 +142,7 @@ let state='title',mode='normal',gt=0,theta=0,omega=0,alpha=0,tau=0,overT=0,timeS
 let score=0,best=0,combo=0,comboT=0,maxCombo=0,maxTilt=0,removedMass=0,bombsUsed=0,highTiltT=0,tiltT=0,pisaT=0,pisaMult=1;
 let held=null,nextQ=[],idc=0,seqN=0,rngSeq=null,rngEv=null,lastDet=null,spawnWait=0;
 let parts=[],texts=[],puddles=[],events={t:0,idx:0,wind:0,windDir:0,quake:0,warn:null};
-let gauge=100,preview=null,shake=0,bannerT=0,lastCreak=0,lastWarn=0,dieKind='';
+let ceilT=0,gauge=100,preview=null,shake=0,bannerT=0,lastCreak=0,lastWarn=0,dieKind='';
 let ptr={down:false,x:W/2,y:0,x0:0,y0:0,t0:0,moved:false,onArmed:false,grp:null,long:false,seen:false};
 function bestKey(){return mode==='daily'?'gs_best_'+dayStr():'gs_best'}
 function dayStr(){return new Date(Date.now()+9*3600e3).toISOString().slice(0,10)}
@@ -161,7 +162,7 @@ function spawnHeld(){if(!nextQ.length)while(nextQ.length<3)nextQ.push(genType())
 
 /* ---------- game control ---------- */
 function startGame(m){
-  ac();mode=m;blocks=[];parts=[];texts=[];puddles=[];nextQ=[];idc=0;seqN=0;gt=0;theta=0;omega=0;alpha=0;tau=0;timeScale=1;overT=0;
+  ac();mode=m;blocks=[];parts=[];texts=[];puddles=[];nextQ=[];idc=0;seqN=0;gt=0;theta=0;omega=0;alpha=0;tau=0;timeScale=1;overT=0;ceilT=0;
   score=0;combo=0;comboT=0;maxCombo=0;maxTilt=0;removedMass=0;bombsUsed=0;highTiltT=0;tiltT=0;pisaT=0;pisaMult=1;lastDet=null;gauge=100;preview=null;shake=0;
   events={t:0,idx:0,wind:0,windDir:0,quake:0,warn:null};
   const seed=m==='daily'?hashS('gs'+dayStr()):(Math.random()*4294967296)>>>0;
@@ -233,7 +234,7 @@ let groupsNow=[];
 function detonate(grp){
   if(state!=='play')return;
   let tq=0,val=0;const n=grp.length;
-  grp.forEach(b=>{b.charge=.001;tq+=meff(b)*b.x/(L/2);val+=TY[b.t].v});
+  grp.forEach(b=>{b.charge=.001;tq+=meff(b)*b.x/(L/2);val+=TY[b.t].v*posW(b.x)});
   const isBomb=grp[0].t==='bomb';
   comboT>0?combo++:combo=1;comboT=2.2;maxCombo=Math.max(maxCombo,combo);
   let sc=Math.round(val*(isBomb?1:MULT(n))*(1+.25*(combo-1))*pisaMult);
@@ -250,9 +251,9 @@ function detonate(grp){
 function bombBlast(b){
   bombsUsed++;sfx.bomb();shake=1;flash(.5);
   const victims=landed().filter(o=>o!==b&&o.rem===0&&o.charge===0&&Math.hypot(o.x-b.x,o.h-b.h)<=S*2.3);
-  let val=0;victims.forEach(o=>{val+=TY[o.t].v;o.charge=.4});
+  let val=0;victims.forEach(o=>{val+=TY[o.t].v*posW(o.x);o.charge=.4});
   const tqall=victims.reduce((s,o)=>s+meff(o)*o.x/(L/2),0)+meff(b)*b.x/(L/2);
-  const sc=Math.round((val+TY.bomb.v)*1.5*pisaMult);score+=sc;$('sv').textContent=score;
+  const sc=Math.round((val+TY.bomb.v*posW(b.x))*1.5*pisaMult);score+=sc;$('sv').textContent=score;
   comboT>0?combo++:combo=1;comboT=2.2;maxCombo=Math.max(maxCombo,combo);
   const [wx,wy]=l2w(b.x,b.h);addText(wx,wy-S,'BOOM +'+sc,'#ff8c5c',30);burst(wx,wy,'#ff8c5c',50,420);
   lastDet={t:gt,tq:tqall,sc};
@@ -310,19 +311,29 @@ function stepPhys(dt){
       const a=sorted[i],b=sorted[j];const dx=b.x-a.x,dy=b.h-a.h,ox=S-Math.abs(dx),oy=S-Math.abs(dy);
       if(ox<=0||oy<=0)continue;
       const ma=Math.max(.4,Math.abs(TY[a.t].m)),mb=Math.max(.4,Math.abs(TY[b.t].m)),ia=1/ma,ib=1/mb,isum=ia+ib;
-      let nx=0,ny=0,pen;
-      if(oy<=ox*1.1||Math.abs(dx)<S*.3){ny=dy>=0?1:-1;pen=oy}else{nx=dx>=0?1:-1;pen=ox}
+      let nx=0,ny=0,pen,slick=false;
+      if(oy<=ox*1.1||Math.abs(dx)<S*.3){ny=dy>=0?1:-1;pen=oy;
+        const lo=dy>=0?a:b,up=dy>=0?b:a;
+        if(lo.t==='balloon'&&up.rem===0){let sx=up.x-lo.x;if(Math.abs(sx)<1.5)sx=(up.id%2?1:-1)*1.5;const k=clamp(sx/(S*.45),-1,1)*.9;const sg=dy>=0?1:-1;nx=k*sg;ny=Math.sqrt(1-k*k)*sg;slick=true}
+      }else{nx=dx>=0?1:-1;pen=ox}
       const corr=Math.max(pen-.5,0)*.8/isum;
       a.x-=nx*corr*ia;a.h-=ny*corr*ia;b.x+=nx*corr*ib;b.h+=ny*corr*ib;
       const vn=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
       if(vn<0){
         const e=(vn<-200)?Math.max(TY[a.t].e,TY[b.t].e)*.6:0,jn=-(1+e)*vn/isum;
         a.vx-=nx*jn*ia;a.vy-=ny*jn*ia;b.vx+=nx*jn*ib;b.vy+=ny*jn*ib;
-        const tx=-ny,ty=nx,vt=(b.vx-a.vx)*tx+(b.vy-a.vy)*ty,mu=Math.min(TY[a.t].mu,TY[b.t].mu)*fk;
+        const tx=-ny,ty=nx,vt=(b.vx-a.vx)*tx+(b.vy-a.vy)*ty,mu=(slick?.1:Math.min(TY[a.t].mu,TY[b.t].mu))*fk;
         const jt=clamp(-vt/isum,-mu*jn,mu*jn);
         a.vx-=tx*jt*ia;a.vy-=ty*jt*ia;b.vx+=tx*jt*ib;b.vy+=ty*jt*ib;
       }
     }
+  }
+  // overhang: a block whose centre is past the edge of what's under it tips off
+  for(const u of ls){
+    if(u.h<=S/2+3)continue;
+    let sup=false,near=null,nd=1e9;
+    for(const l of ls){if(l===u)continue;if(Math.abs(l.h-(u.h-S))<S*.2&&Math.abs(l.x-u.x)<S*.98){const d=Math.abs(l.x-u.x);if(d<=S*.5)sup=true;if(d<nd){nd=d;near=l}}}
+    if(!sup&&near)u.vx+=Math.sign(u.x-near.x||1)*G*.6*dt;
   }
   // off the edge
   for(const b of ls){
@@ -376,6 +387,7 @@ function manage(dt){
   if(deg>20)highTiltT+=dt;
   if(deg>15){tiltT+=dt}else if(deg<10)tiltT=0;
   pisaMult=tiltT>=3?(deg>25?2:1.5):1;
+  let tallest=0;landed().forEach(b=>{const w=l2w(b.x,b.h+S/2);tallest=Math.max(tallest,PY-w[1])});const maxH=PY-Math.max(H*.2,70+S);if(tallest>=maxH){if(ceilT===0)banner('積み上げすぎ！ 消して！','#ff5c8a');ceilT+=dt;if(ceilT>1.5)gameOver('積み上げすぎ')}else ceilT=Math.max(0,ceilT-dt);
   if(Math.abs(theta)>=LIMIT){overT+=dt;if(overT>=GOT)gameOver('傾きすぎ')}else overT=Math.max(0,overT-dt*2);
   if(deg>15&&gt-lastCreak>Math.max(.35,.9-deg*.02)){lastCreak=gt;sfx.creak(deg/35)}
   if(deg>28&&gt-lastWarn>.5){lastWarn=gt;sfx.warn()}
@@ -492,10 +504,11 @@ function render(){
   // group labels
   groupsNow.forEach(grp=>{
     if(!grp[0]||grp[0].charge>0)return;let top=grp[0];grp.forEach(b=>{if(b.h>top.h)top=b});
-    const lab=grp.length>=7?'💥'+Math.max(0,3-top.fuse).toFixed(1):'×'+MULT(grp.length);
+    const est=Math.round(grp.reduce((q,b)=>q+TY[b.t].v*posW(b.x),0)*MULT(grp.length)*(1+.25*(Math.max(combo,comboT>0?combo:0)))*pisaMult);const lab=grp.length>=7?'💥'+Math.max(0,3-top.fuse).toFixed(1)+' +'+est:'+'+est;
     g.save();g.translate(top.x,-top.h-S*.7);g.rotate(-theta);g.font='900 '+Math.round(S*.42)+'px sans-serif';g.textAlign='center';g.fillStyle=grp.length>=7?'#ff5c8a':'#ffe45c';g.strokeStyle='#0b1530';g.lineWidth=4;g.strokeText(lab,0,0);g.fillText(lab,0,0);g.restore();
   });
   g.restore();
+  if(state==='play'){const cy=Math.max(H*.2,70+S);g.save();g.setLineDash([8,10]);g.lineWidth=2;g.strokeStyle=ceilT>0?'rgba(255,92,138,.9)':'rgba(255,255,255,.12)';g.beginPath();g.moveTo(0,cy);g.lineTo(W,cy);g.stroke();g.restore()}
   // airborne & off blocks
   for(const b of blocks){if(b.st==='air'||b.st==='off'){g.save();g.translate(b.wx,b.wy);g.rotate(b.st==='off'?b.rot+b.age*1.5:0);drawBlock(b,0);g.restore()}}
   // held + guide
